@@ -2,6 +2,7 @@ import streamlit as st
 import cv2
 import mediapipe as mp
 import numpy as np
+import time
 
 # Streamlit UI Configuration
 st.set_page_config(page_title="Virtual Mouse", layout="wide")
@@ -23,15 +24,35 @@ drawing_utils = mp.solutions.drawing_utils
 # State variables for cursor control (in screen coordinates, without pyautogui)
 prev_index_x, prev_index_y = 0, 0
 
-# Start Webcam Button
-if st.sidebar.button("Start Webcam", key="start_webcam"):
+# Request webcam permission through Streamlit component
+webcam_permission = st.text('Click the button below to request webcam access')
+start_webcam = st.button('Start Webcam')
+
+if start_webcam:
+    webcam_permission.empty()  # Remove permission prompt
+
+    # Display a JavaScript code to ask for permission
+    st.components.v1.html("""
+    <script>
+        // Request webcam access
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(stream) {
+                window.stream = stream;  // Global reference to the stream
+            })
+            .catch(function(err) {
+                alert('Error: ' + err);
+            });
+    </script>
+    """, height=0)
+
     cap = cv2.VideoCapture(0)
+
     if not cap.isOpened():
         st.error("Unable to access the webcam.")
     else:
         st.success("Webcam started successfully. Press 'Stop Webcam' to exit.")
 
-    stop_webcam = st.sidebar.button("Stop Webcam", key="stop_webcam")
+    stop_webcam = st.button("Stop Webcam")
     frame_placeholder = st.empty()
 
     while cap.isOpened():
