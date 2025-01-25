@@ -1,7 +1,6 @@
 import streamlit as st
 import cv2
 import mediapipe as mp
-import pyautogui
 import numpy as np
 
 # Streamlit UI Configuration
@@ -16,12 +15,12 @@ hotspot_y = st.sidebar.slider("Hotspot Y Position (% of Screen Height):", 0, 100
 hotspot_size = st.sidebar.slider("Hotspot Size (px):", 50, 200, 100, key="hotspot_size")
 smoothing_factor = st.sidebar.slider("Smoothing Factor:", 1, 20, 10, key="smoothing_factor")
 
-# Initialize Mediapipe and PyAutoGUI parameters
-hand_detector = mp.solutions.hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.8, min_tracking_confidence=0.7)
+# Initialize Mediapipe parameters
+mp_hands = mp.solutions.hands
+hand_detector = mp_hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.8, min_tracking_confidence=0.7)
 drawing_utils = mp.solutions.drawing_utils
-screen_width, screen_height = pyautogui.size()
 
-# State variables for cursor control
+# State variables for cursor control (in screen coordinates, without pyautogui)
 prev_index_x, prev_index_y = 0, 0
 
 # Start Webcam Button
@@ -63,8 +62,8 @@ if st.sidebar.button("Start Webcam", key="start_webcam"):
 
                     # Track the index finger tip
                     if id == 8:  # Index finger tip
-                        index_x = screen_width / frame_width * x
-                        index_y = screen_height / frame_height * y
+                        index_x = x
+                        index_y = y
                         cv2.circle(frame, (x, y), 10, (0, 255, 255), -1)
 
                 # Cursor movement with smoothing
@@ -72,16 +71,13 @@ if st.sidebar.button("Start Webcam", key="start_webcam"):
                     index_x = prev_index_x + (index_x - prev_index_x) / smoothing_factor
                     index_y = prev_index_y + (index_y - prev_index_y) / smoothing_factor
                     prev_index_x, prev_index_y = index_x, index_y
-                    pyautogui.moveTo(np.clip(index_x, 0, screen_width), np.clip(index_y, 0, screen_height))
 
-                    # Check if the index finger is in the "hotspot" area
-                    hotspot_x_px = screen_width * hotspot_x / 100
-                    hotspot_y_px = screen_height * hotspot_y / 100
+                    # Simulate actions based on position
+                    hotspot_x_px = frame_width * hotspot_x / 100
+                    hotspot_y_px = frame_height * hotspot_y / 100
                     if (hotspot_x_px - hotspot_size < index_x < hotspot_x_px + hotspot_size and
                             hotspot_y_px - hotspot_size < index_y < hotspot_y_px + hotspot_size):
-                        pyautogui.doubleClick()  # Open folder
-                        pyautogui.press('enter')  # Mimic folder opening
-                        st.info("Folder opened!")
+                        st.info("Gesture detected in hotspot area!")
 
         # Display the frame
         frame_placeholder.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), channels="RGB", use_column_width=True)
