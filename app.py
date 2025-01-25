@@ -2,7 +2,6 @@ import streamlit as st
 import cv2
 import mediapipe as mp
 import numpy as np
-import time
 
 # Streamlit UI Configuration
 st.set_page_config(page_title="Virtual Mouse", layout="wide")
@@ -108,5 +107,4 @@ if start_webcam:
             break
 
     cap.release()
-    cv2.destroyAllWindows()
     st.success("Webcam stopped successfully.")
