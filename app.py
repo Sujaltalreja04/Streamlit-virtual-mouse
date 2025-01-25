@@ -1,6 +1,7 @@
 import streamlit as st
 import cv2
 import mediapipe as mp
+import pyautogui
 import numpy as np
 
 # Streamlit UI Configuration
@@ -22,6 +23,7 @@ drawing_utils = mp.solutions.drawing_utils
 
 # State variables for cursor control (in screen coordinates, without pyautogui)
 prev_index_x, prev_index_y = 0, 0
+screen_width, screen_height = pyautogui.size()
 
 # Webcam Capture using Streamlit's camera_input method
 webcam_image = st.camera_input("Capture your webcam feed")
@@ -49,7 +51,21 @@ if webcam_image:
                     index_y = int(landmark.y * frame.shape[0])
                     cv2.circle(frame, (index_x, index_y), 10, (0, 255, 255), -1)
 
-            # Optional: Add further logic to simulate mouse movement or actions based on gestures
+            # Cursor movement with smoothing
+            if index_x and index_y:
+                index_x = prev_index_x + (index_x - prev_index_x) / smoothing_factor
+                index_y = prev_index_y + (index_y - prev_index_y) / smoothing_factor
+                prev_index_x, prev_index_y = index_x, index_y
+                pyautogui.moveTo(np.clip(index_x, 0, screen_width), np.clip(index_y, 0, screen_height))
+
+                # Check if the index finger is in the "hotspot" area
+                hotspot_x_px = screen_width * hotspot_x / 100
+                hotspot_y_px = screen_height * hotspot_y / 100
+                if (hotspot_x_px - hotspot_size < index_x < hotspot_x_px + hotspot_size and
+                        hotspot_y_px - hotspot_size < index_y < hotspot_y_px + hotspot_size):
+                    pyautogui.doubleClick()  # Open folder
+                    pyautogui.press('enter')  # Mimic folder opening
+                    st.info("Folder opened!")
 
     # Display the processed frame
     st.image(frame, channels="BGR", use_column_width=True)
